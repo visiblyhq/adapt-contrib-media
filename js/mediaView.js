@@ -358,14 +358,15 @@ class MediaView extends ComponentView {
   }
 
   _getUsedVerticalSpace() {
-    var usedVerticalSpace = 88 + 98; //top nav + bottom button
+    var navPadding = window
+      .getComputedStyle(document.documentElement)
+      .getPropertyValue("--adapt-navigation-padding");
+    var usedVerticalSpace = 88 + 98 + parseInt(navPadding.trim("px")); //top nav + bottom button + navPadding
 
     //if display name is add this to used space
     if (this.model.get("displayTitle") != "") {
       var displayTitleElement = this.$el.find(".component__title.media__title");
-      usedVerticalSpace += parseInt(
-        displayTitleElement.outerHeight(true)
-      );
+      usedVerticalSpace += parseInt(displayTitleElement.outerHeight(true));
     }
 
     //if instruction name is add this to used space
@@ -374,9 +375,7 @@ class MediaView extends ComponentView {
         ".component__instruction.media__instruction"
       );
 
-      usedVerticalSpace += parseInt(
-        instructionElement.outerHeight(true)
-      );
+      usedVerticalSpace += parseInt(instructionElement.outerHeight(true));
     }
 
     var transcriptMargin = this.$el
