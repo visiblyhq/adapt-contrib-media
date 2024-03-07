@@ -155,7 +155,7 @@ window.mejs.MediaElementPlayer.prototype.enterFullScreen = function () {
 };
 
 /**
- * Overwrite mediaelement-and-player hideControls to remove global delete
+ * Overwrite mediaelement-and-player hideControls
  */
 window.mejs.MediaElementPlayer.prototype.hideControls = function (doAnimation) {
   var t = this;
@@ -197,7 +197,7 @@ window.mejs.MediaElementPlayer.prototype.hideControls = function (doAnimation) {
 };
 
 /**
- * Overwrite mediaelement-and-player showControls to remove global delete
+ * Overwrite mediaelement-and-player showControls
  */
 window.mejs.MediaElementPlayer.prototype.showControls = function (doAnimation) {
   var t = this;
@@ -309,6 +309,10 @@ window.mejs.MediaElementPlayer.prototype.setPlayerSize = function (
 
     var newWidth = parseInt(newHeight * (nativeWidth / nativeHeight));
     var parentWidth = t.container.parent().closest(":visible").width();
+    var viewWidth = document.documentElement.clientWidth;
+    if (parentWidth == viewWidth) {
+      parentWidth = parentWidth - 50;
+    }
     var parentHeight = t.container.parent().closest(":visible").height();
 
     if (parentHeight == 0) {
@@ -370,6 +374,21 @@ window.mejs.MediaElementPlayer.prototype.setPlayerSize = function (
           "margin-top": 0,
           "border-radius": "10px",
         });
+        t.controls.width(`calc(100% - ${widthDiff}px)`).css({
+          "margin-left": `${widthDiff / 2}px`,
+        });
+
+        var buttonWidth = 0;
+        var buttons = t.controls.children(".mejs-button");
+        if (buttons.length > 0) {
+          for (let index = 0; index < buttons.length; index++) {
+            buttonWidth = buttonWidth + 27;
+          }
+        }
+        t.controls
+          .children(".mejs-time-rail")
+          .children(".mejs-time-total")
+          .width(`calc(100% - ${buttonWidth + 32}px)`);
       } else {
         // set outer container size
         t.container.height(parentHeight).width(parentWidth);
@@ -416,7 +435,7 @@ window.mejs.MediaElementPlayer.prototype.setPlayerSize = function (
 };
 
 /**
- * Overwrite mediaelement-and-player setControlsSize to remove global delete
+ * Overwrite mediaelement-and-player setControlsSize
  */
 window.mejs.MediaElementPlayer.prototype.setControlsSize = function () {
   //just pause for 5ms to allow display to render otherwise button hasn't moved so below code does nothing
@@ -482,7 +501,7 @@ window.mejs.MediaElementPlayer.prototype.setControlsSize = function () {
 };
 
 /**
- * Overwrite mediaelement-and-player buildposter to remove global delete
+ * Overwrite mediaelement-and-player buildposter
  */
 window.mejs.MediaElementPlayer.prototype.buildposter = function (
   player,
@@ -528,7 +547,7 @@ window.mejs.MediaElementPlayer.prototype.buildposter = function (
 };
 
 /**
- * Overwrite mediaelement-and-player buildoverlays to remove global delete
+ * Overwrite mediaelement-and-player buildoverlays
  */
 window.mejs.MediaElementPlayer.prototype.buildoverlays = function (
   player,
@@ -690,7 +709,7 @@ window.mejs.MediaElementPlayer.prototype.buildoverlays = function (
 };
 
 /**
- * Overwrite mediaelement-and-player buildoverlays to remove global delete
+ * Overwrite mediaelement-and-player buildoverlays
  */
 window.mejs.MediaElementPlayer.prototype.buildtracks = function (
   player,
@@ -886,17 +905,32 @@ window.mejs.MediaElementPlayer.prototype.buildtracks = function (
 /**
  * Overwrite mediaelement-and-player buildcurrent
  */
-window.mejs.MediaElementPlayer.prototype.buildcurrent = function (player, controls, layers, media) {}
+window.mejs.MediaElementPlayer.prototype.buildcurrent = function (
+  player,
+  controls,
+  layers,
+  media
+) {};
 
 /**
- * Overwrite mediaelement-and-player buildcurrent
+ * Overwrite mediaelement-and-player buildduration
  */
-window.mejs.MediaElementPlayer.prototype.buildcurrent = function (player, controls, layers, media) {}
+window.mejs.MediaElementPlayer.prototype.buildduration = function (
+  player,
+  controls,
+  layers,
+  media
+) {};
 
 /**
  * Overwrite mediaelement-and-player buildplaypause
  */
-window.mejs.MediaElementPlayer.prototype.buildplaypause = function (player, controls, layers, media) {}
+window.mejs.MediaElementPlayer.prototype.buildplaypause = function (
+  player,
+  controls,
+  layers,
+  media
+) {};
 
 /**
  * Force the default language so that the aria-label can be localised from Adapt
