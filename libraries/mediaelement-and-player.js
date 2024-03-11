@@ -2820,13 +2820,13 @@ if (typeof jQuery != "undefined") {
             t.controlsAreVisible = true;
           });
       } else {
-        t.controls.removeClass("mejs-offscreen").css("display", "flex");
+        t.controls.removeClass("mejs-offscreen").css("display", "block");
 
         // any additional controls people might add and want to hide
         t.container
           .find(".mejs-control")
           .removeClass("mejs-offscreen")
-          .css("display", "flex");
+          .css("display", "block");
 
         t.controlsAreVisible = true;
         t.container.trigger("controlsshown");
@@ -2850,7 +2850,7 @@ if (typeof jQuery != "undefined") {
       if (doAnimation) {
         // fade out main controls
         t.controls.stop(true, true).fadeOut(200, function () {
-          $(this).addClass("mejs-offscreen").css("display", "flex");
+          $(this).addClass("mejs-offscreen").css("display", "block");
 
           t.controlsAreVisible = false;
           t.container.trigger("controlshidden");
@@ -2861,17 +2861,17 @@ if (typeof jQuery != "undefined") {
           .find(".mejs-control")
           .stop(true, true)
           .fadeOut(200, function () {
-            $(this).addClass("mejs-offscreen").css("display", "flex");
+            $(this).addClass("mejs-offscreen").css("display", "block");
           });
       } else {
         // hide main controls
-        t.controls.addClass("mejs-offscreen").css("display", "flex");
+        t.controls.addClass("mejs-offscreen").css("display", "block");
 
         // hide others
         t.container
           .find(".mejs-control")
           .addClass("mejs-offscreen")
-          .css("display", "flex");
+          .css("display", "block");
 
         t.controlsAreVisible = false;
         t.container.trigger("controlshidden");
@@ -3306,32 +3306,16 @@ if (typeof jQuery != "undefined") {
           }
         })();
 
-        var viewportHeight = getComputedStyle(t.$node[0]).getPropertyValue(
-          "--adapt-viewport-height"
-        );
-
-        //total height of other elements on the screen
-        var usedVerticalSpace = this.options.usedVerticalSpace;
-        var allowedHeight =
-          parseInt(viewportHeight.trimEnd("px")) - usedVerticalSpace;
-
-        var newHeight = allowedHeight;
-
-        var newWidth = parseInt(newHeight * (nativeWidth / nativeHeight));
-        var parentWidth = t.container.parent().closest(":visible").width();
-        var parentHeight = t.container.parent().closest(":visible").height();
-
-        if (parentHeight == 0) {
-          parentHeight = allowedHeight - 1;
-        }
-
-        if (nativeHeight == allowedHeight) {
-          return;
-        }
+        var parentWidth = t.container.parent().closest(":visible").width(),
+          parentHeight = t.container.parent().closest(":visible").height(),
+          newHeight =
+            t.isVideo || !t.options.autosizeProgress
+              ? parseInt((parentWidth * nativeHeight) / nativeWidth, 10)
+              : nativeHeight;
 
         // When we use percent, the newHeight can't be calculated so we get the container height
-        if (isNaN(newWidth) || newWidth > parentWidth) {
-          newWidth = parentWidth;
+        if (isNaN(newHeight)) {
+          newHeight = parentHeight;
         }
 
         if (
@@ -3339,84 +3323,29 @@ if (typeof jQuery != "undefined") {
           t.container.parent()[0].tagName.toLowerCase() === "body"
         ) {
           // && t.container.siblings().count == 0) {
-          newWidth = $(window).width();
-          parentHeight = $(window).height();
+          parentWidth = $(window).width();
+          newHeight = $(window).height();
         }
 
-        if (newWidth && newHeight) {
-          if (newWidth <= newHeight) {
-            // set outer container size
-            t.container.height(newHeight).width(newWidth);
+        if (newHeight && parentWidth) {
+          // set outer container size
+          t.container.width(parentWidth).height(newHeight);
 
-            // set native <video> or <audio> and shims
+          // set native <video> or <audio> and shims
+          t.$media
+            .add(t.container.find(".mejs-shim"))
+            .width("100%")
+            .height("100%");
 
-            var widthDiff = parentWidth - newWidth;
-
-            t.$media
-              .add(t.container.find(".mejs-shim"))
-              .width(`calc(100% - ${widthDiff}px)`)
-              .height("100%");
-
-            // if shim is ready, send the size to the embeded plugin
-            if (t.isVideo) {
-              if (t.media.setVideoSize) {
-                t.media.setVideoSize(parentWidth, newHeight);
-              }
+          // if shim is ready, send the size to the embeded plugin
+          if (t.isVideo) {
+            if (t.media.setVideoSize) {
+              t.media.setVideoSize(parentWidth, newHeight);
             }
-
-            // set the layers
-            t.layers
-              .children(".mejs-layer")
-              .width(`calc(100% - ${widthDiff}px)`)
-              .height("100%");
-
-            t.layers.children(".mejs-margin-left").css({
-              "margin-left": `${widthDiff / 2}px`,
-              "margin-top": 0,
-              "border-radius": "10px",
-            });
-            t.$media.css({
-              "margin-left": `${widthDiff / 2}px`,
-              "margin-top": 0,
-              "border-radius": "10px",
-            });
-          } else {
-            // set outer container size
-            t.container.height(parentHeight).width(parentWidth);
-
-            newHeight = parseInt(parentWidth * (nativeHeight / nativeWidth));
-
-            var heightDiff = parentHeight - newHeight;
-
-            t.$media
-              .add(t.container.find(".mejs-shim"))
-              .width("100%")
-              .height(newHeight)
-              .css({
-                "margin-left": 0,
-                "margin-top": heightDiff / 2,
-              });
-
-            // if shim is ready, send the size to the embeded plugin
-            if (t.isVideo) {
-              if (t.media.setVideoSize) {
-                t.media.setVideoSize(parentWidth, newHeight);
-              }
-            }
-            t.layers
-              .children(".mejs-layer")
-              .height(`calc(100% - ${heightDiff}px`)
-              .width("100%");
-
-            t.layers.children(".mejs-margin-left").css({
-              "margin-top": `${heightDiff / 2}px`,
-              "border-radius": "10px",
-            });
-            t.$media.css({
-              "margin-top": `${heightDiff / 2}px`,
-              "border-radius": "10px",
-            });
           }
+
+          // set the layers
+          t.layers.children(".mejs-layer").width("100%").height("100%");
         }
       } else {
         t.container.width(t.width).height(t.height);
@@ -3426,79 +3355,73 @@ if (typeof jQuery != "undefined") {
     },
 
     setControlsSize: function () {
-      //just pause for 5ms to allow display to render otherwise button hasn't moved so below code does nothing
-      new Promise((resolve) => setTimeout(resolve, 5)).then(() => {
-        var t = this,
-          usedWidth = 0,
-          railWidth = 0,
-          rail = t.controls.find(".mejs-time-rail"),
-          total = t.controls.find(".mejs-time-total"),
-          others = rail.siblings(),
-          lastControl = others.last(),
-          lastControlPosition = null;
+      var t = this,
+        usedWidth = 0,
+        railWidth = 0,
+        rail = t.controls.find(".mejs-time-rail"),
+        total = t.controls.find(".mejs-time-total"),
+        others = rail.siblings(),
+        lastControl = others.last(),
+        lastControlPosition = null;
 
-        // skip calculation if hidden
-        if (
-          !t.container.is(":visible") ||
-          !rail.length ||
-          !rail.is(":visible")
-        ) {
-          return;
-        }
+      // skip calculation if hidden
+      if (!t.container.is(":visible") || !rail.length || !rail.is(":visible")) {
+        return;
+      }
 
-        // allow the size to come from custom CSS
-        if (t.options && !t.options.autosizeProgress) {
-          // Also, frontends devs can be more flexible
-          // due the opportunity of absolute positioning.
-          railWidth = parseInt(rail.css("width"), 10);
-        }
+      // allow the size to come from custom CSS
+      if (t.options && !t.options.autosizeProgress) {
+        // Also, frontends devs can be more flexible
+        // due the opportunity of absolute positioning.
+        railWidth = parseInt(rail.css("width"), 10);
+      }
 
-        // attempt to autosize
-        if (railWidth === 0 || !railWidth) {
-          // find the size of all the other controls besides the rail
-          others.each(function () {
-            var $this = $(this);
-            if ($this.css("position") != "absolute" && $this.is(":visible")) {
-              usedWidth += $(this).outerWidth(true);
-            }
-          });
-
-          // fit the rail into the remaining space
-          railWidth =
-            t.$media.width() -
-            usedWidth -
-            (rail.outerWidth(true) - rail.width());
-        }
-        // resize the rail,
-        // but then check if the last control (say, the fullscreen button) got pushed down
-        // this often happens when zoomed
-
-        do {
-          // outer area
-          rail.width(railWidth);
-          // dark space
-          total.width(railWidth - (total.outerWidth(true) - total.width()));
-
-          if (lastControl.css("position") != "absolute") {
-            lastControlPosition = lastControl.length
-              ? lastControl.position()
-              : null;
-            railWidth--;
+      // attempt to autosize
+      if (railWidth === 0 || !railWidth) {
+        // find the size of all the other controls besides the rail
+        others.each(function () {
+          var $this = $(this);
+          if ($this.css("position") != "absolute" && $this.is(":visible")) {
+            usedWidth += $(this).outerWidth(true);
           }
-        } while (
-          lastControlPosition !== null &&
-          lastControlPosition.top.toFixed(2) > 0 &&
-          railWidth > 0
-        );
-        t.container.trigger("controlsresize");
-      });
+        });
+
+        // fit the rail into the remaining space
+        railWidth =
+          t.controls.width() -
+          usedWidth -
+          (rail.outerWidth(true) - rail.width());
+      }
+
+      // resize the rail,
+      // but then check if the last control (say, the fullscreen button) got pushed down
+      // this often happens when zoomed
+      do {
+        // outer area
+        rail.width(railWidth);
+        // dark space
+        total.width(railWidth - (total.outerWidth(true) - total.width()));
+
+        if (lastControl.css("position") != "absolute") {
+          lastControlPosition = lastControl.length
+            ? lastControl.position()
+            : null;
+          railWidth--;
+        }
+      } while (
+        lastControlPosition !== null &&
+        lastControlPosition.top.toFixed(2) > 0 &&
+        railWidth > 0
+      );
+
+      t.container.trigger("controlsresize");
     },
 
     buildposter: function (player, controls, layers, media) {
       var t = this,
-        poster = $(
-          '<div class="mejs-poster mejs-layer mejs-margin-left">' + "</div>"
-        ).appendTo(layers),
+        poster = $('<div class="mejs-poster mejs-layer">' + "</div>").appendTo(
+          layers
+        ),
         posterUrl = player.$media.attr("poster");
 
       // prioriy goes to option (this is useful if you need to support iOS 3.x (iOS completely fails with poster)
@@ -3552,7 +3475,7 @@ if (typeof jQuery != "undefined") {
       if (!player.isVideo) return;
 
       var loading = $(
-          '<div class="mejs-overlay mejs-layer mejs-margin-left">' +
+          '<div class="mejs-overlay mejs-layer">' +
             '<div class="mejs-overlay-loading"><span></span></div>' +
             "</div>"
         )
@@ -3567,7 +3490,7 @@ if (typeof jQuery != "undefined") {
           .appendTo(layers),
         // this needs to come last so it's on top
         bigPlay = $(
-          '<div class="mejs-overlay mejs-layer mejs-overlay-play mejs-margin-left">' +
+          '<div class="mejs-overlay mejs-layer mejs-overlay-play">' +
             '<div class="mejs-overlay-button"></div>' +
             "</div>"
         )
@@ -3632,7 +3555,9 @@ if (typeof jQuery != "undefined") {
       media.addEventListener(
         "pause",
         function () {
-          bigPlay.show();
+          if (!mejs.MediaFeatures.isiPhone) {
+            bigPlay.show();
+          }
         },
         false
       );
@@ -3942,6 +3867,92 @@ if (typeof jQuery != "undefined") {
 
   // push out to window
   window.MediaElementPlayer = mejs.MediaElementPlayer;
+})(mejs.$);
+
+(function ($) {
+  $.extend(mejs.MepDefaults, {
+    playText: mejs.i18n.t("Play"),
+    pauseText: mejs.i18n.t("Pause"),
+  });
+
+  // PLAY/pause BUTTON
+  $.extend(MediaElementPlayer.prototype, {
+    buildplaypause: function (player, controls, layers, media) {
+      var t = this,
+        op = t.options,
+        play = $(
+          '<div class="mejs-button mejs-playpause-button mejs-play" >' +
+            '<button type="button" aria-controls="' +
+            t.id +
+            '" title="' +
+            op.playText +
+            '" aria-label="' +
+            op.playText +
+            '"></button>' +
+            "</div>"
+        )
+          .appendTo(controls)
+          .click(function (e) {
+            e.preventDefault();
+
+            if (media.paused) {
+              media.play();
+            } else {
+              media.pause();
+            }
+
+            return false;
+          }),
+        play_btn = play.find("button");
+
+      function togglePlayPause(which) {
+        if ("play" === which) {
+          play.removeClass("mejs-play").addClass("mejs-pause");
+          play_btn.attr({
+            title: op.pauseText,
+            "aria-label": op.pauseText,
+          });
+        } else {
+          play.removeClass("mejs-pause").addClass("mejs-play");
+          play_btn.attr({
+            title: op.playText,
+            "aria-label": op.playText,
+          });
+        }
+      }
+      togglePlayPause("pse");
+
+      media.addEventListener(
+        "play",
+        function () {
+          togglePlayPause("play");
+        },
+        false
+      );
+      media.addEventListener(
+        "playing",
+        function () {
+          togglePlayPause("play");
+        },
+        false
+      );
+
+      media.addEventListener(
+        "pause",
+        function () {
+          togglePlayPause("pse");
+        },
+        false
+      );
+      media.addEventListener(
+        "paused",
+        function () {
+          togglePlayPause("pse");
+        },
+        false
+      );
+    },
+  });
 })(mejs.$);
 
 (function ($) {
@@ -4285,6 +4296,112 @@ if (typeof jQuery != "undefined") {
           t.current.width(newWidth);
           t.handle.css("left", handlePos);
         }
+      }
+    },
+  });
+})(mejs.$);
+
+(function ($) {
+  // options
+  $.extend(mejs.MepDefaults, {
+    duration: -1,
+    timeAndDurationSeparator: "<span> | </span>",
+  });
+
+  // current and duration 00:00 / 00:00
+  $.extend(MediaElementPlayer.prototype, {
+    buildcurrent: function (player, controls, layers, media) {
+      var t = this;
+
+      $(
+        '<div class="mejs-time" role="timer" aria-live="off">' +
+          '<span class="mejs-currenttime">' +
+          mejs.Utility.secondsToTimeCode(0, player.options) +
+          "</span>" +
+          "</div>"
+      ).appendTo(controls);
+
+      t.currenttime = t.controls.find(".mejs-currenttime");
+
+      media.addEventListener(
+        "timeupdate",
+        function () {
+          player.updateCurrent();
+        },
+        false
+      );
+    },
+
+    buildduration: function (player, controls, layers, media) {
+      var t = this;
+
+      if (controls.children().last().find(".mejs-currenttime").length > 0) {
+        $(
+          t.options.timeAndDurationSeparator +
+            '<span class="mejs-duration">' +
+            mejs.Utility.secondsToTimeCode(t.options.duration, t.options) +
+            "</span>"
+        ).appendTo(controls.find(".mejs-time"));
+      } else {
+        // add class to current time
+        controls
+          .find(".mejs-currenttime")
+          .parent()
+          .addClass("mejs-currenttime-container");
+
+        $(
+          '<div class="mejs-time mejs-duration-container">' +
+            '<span class="mejs-duration">' +
+            mejs.Utility.secondsToTimeCode(t.options.duration, t.options) +
+            "</span>" +
+            "</div>"
+        ).appendTo(controls);
+      }
+
+      t.durationD = t.controls.find(".mejs-duration");
+
+      media.addEventListener(
+        "timeupdate",
+        function () {
+          player.updateDuration();
+        },
+        false
+      );
+    },
+
+    updateCurrent: function () {
+      var t = this;
+
+      var currentTime = t.media.currentTime;
+
+      if (isNaN(currentTime)) {
+        currentTime = 0;
+      }
+
+      if (t.currenttime) {
+        t.currenttime.html(
+          mejs.Utility.secondsToTimeCode(currentTime, t.options)
+        );
+      }
+    },
+
+    updateDuration: function () {
+      var t = this;
+
+      var duration = t.media.duration;
+      if (t.options.duration > 0) {
+        duration = t.options.duration;
+      }
+
+      if (isNaN(duration)) {
+        duration = 0;
+      }
+
+      //Toggle the long video class if the video is longer than an hour.
+      t.container.toggleClass("mejs-long-video", duration > 3600);
+
+      if (t.durationD && duration > 0) {
+        t.durationD.html(mejs.Utility.secondsToTimeCode(duration, t.options));
       }
     },
   });
@@ -5063,7 +5180,6 @@ if (typeof jQuery != "undefined") {
 
       t.layers.children("div").width(t.normalWidth).height(t.normalHeight);
 
-      t.setPlayerSize("100%", "100%");
       t.fullscreenBtn
         .removeClass("mejs-unfullscreen")
         .addClass("mejs-fullscreen");
@@ -5268,7 +5384,7 @@ if (typeof jQuery != "undefined") {
         .prependTo(layers)
         .hide();
       player.captions = $(
-        '<div class="mejs-captions-layer mejs-layer mejs-margin-left"><div class="mejs-captions-position mejs-captions-position-hover" ' +
+        '<div class="mejs-captions-layer mejs-layer"><div class="mejs-captions-position mejs-captions-position-hover" ' +
           attr +
           '><span class="mejs-captions-text"></span></div></div>'
       )
@@ -5423,7 +5539,7 @@ if (typeof jQuery != "undefined") {
           if (player.hasChapters && !media.paused) {
             player.chapters.fadeOut(200, function () {
               $(this).addClass("mejs-offscreen");
-              $(this).css("display", "flex");
+              $(this).css("display", "block");
             });
           }
         }
